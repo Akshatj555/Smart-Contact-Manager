@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,10 +14,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.scm.scm20.entities.Contact;
 import com.scm.scm20.entities.User;
 import com.scm.scm20.forms.ContactForm;
+import com.scm.scm20.helpers.AppConstants;
 import com.scm.scm20.helpers.Helper;
 import com.scm.scm20.helpers.Message;
 import com.scm.scm20.helpers.MessageType;
@@ -96,16 +99,21 @@ public class ContactController {
     }
 
     @RequestMapping
-    public String viewContacts(Model model, Authentication authentication){
+    public String viewContacts(
+        @RequestParam(value = "page", defaultValue = "0") int page, 
+        @RequestParam(value = "size", defaultValue = AppConstants.PAGE_SIZE+"") int size, 
+        @RequestParam(value = "sortBy", defaultValue = "name") String sortBy, 
+        @RequestParam(value = "direction", defaultValue = "asc") String direction, Model model, Authentication authentication){
 
         // load all the user contacts
         String username = Helper.getEmailOfLoggedInUser(authentication);
 
         User user = userService.getUserByEmail(username);
 
-        List<Contact> contacts = contactService.getContactByUser(user);
+        Page<Contact> pageContact = contactService.getContactByUser(user, page, size, sortBy, direction);
 
-        model.addAttribute("contacts", contacts);
+        model.addAttribute("pageContact", pageContact);
+        model.addAttribute("pageSize", AppConstants.PAGE_SIZE);
 
         return "user/contacts";
     }
