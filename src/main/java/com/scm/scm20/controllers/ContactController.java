@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -167,6 +168,70 @@ public class ContactController {
          );
 
         return "redirect:/user/contacts";
+    }
+
+    @GetMapping("/view/{contactId}")
+    public String updateContactFormView(@PathVariable("contactId") String contactId, Model model){
+
+        var contact = contactService.getContactById(contactId);
+
+        ContactForm contactForm = new ContactForm();
+        contactForm.setName(contact.getName());
+        contactForm.setEmail(contact.getEmail());
+        contactForm.setPhoneNumber(contact.getPhoneNumber());
+        contactForm.setAddress(contact.getAddress());
+        contactForm.setDescription(contact.getDescription());
+        contactForm.setFavourite(contact.isFavourite());
+        contactForm.setWebsiteLink(contact.getWebsiteLink());
+        contactForm.setLinkedInLink(contact.getLinkedInLink());
+        contactForm.setPicture(contact.getPicture());
+
+        model.addAttribute("contactForm", contactForm);
+        model.addAttribute("contactId", contactId);
+
+        return "user/update_contact_view";
+    }
+
+    @RequestMapping(value = "/update/{contactId}", method = RequestMethod.POST)
+    public String updateContact(@PathVariable("contactId") String contactId, 
+    @Valid @ModelAttribute ContactForm contactForm, BindingResult bindingResult,Model model){
+
+        if (bindingResult.hasErrors()) {
+            return "user/update_contact_view";
+        }
+
+        // update contact
+
+        var newContact = contactService.getContactById(contactId);
+
+        newContact.setId(contactId);
+        newContact.setName(contactForm.getName());
+        newContact.setEmail(contactForm.getEmail());
+        newContact.setPhoneNumber(contactForm.getPhoneNumber());
+        newContact.setAddress(contactForm.getAddress());
+        newContact.setDescription(contactForm.getDescription());
+        newContact.setFavourite(contactForm.isFavourite());
+        newContact.setWebsiteLink(contactForm.getWebsiteLink());
+        newContact.setLinkedInLink(contactForm.getLinkedInLink());
+
+        if (contactForm.getContactImage() != null && !contactForm.getContactImage().isEmpty()) {
+
+            logger.info("File is not empty");
+            String fileName = UUID.randomUUID().toString();
+            String imageUrl = imageService.uploadImage(contactForm.getContactImage(), fileName);
+            newContact.setCloudinaryImagePublicId(fileName);
+            newContact.setPicture(imageUrl);
+            contactForm.setPicture(imageUrl);
+            
+        }else{
+            logger.info("File is empty");
+        }
+
+        var updatedContact = contactService.updateContact(newContact);
+        logger.info("Updated contact: {}", updatedContact);
+        model.addAttribute("message", Message.builder().content("Contact Updated").type(MessageType.green).build());
+
+        return "redirect:/user/contacts/view/" + contactId;
     }
 
 }
