@@ -76,11 +76,6 @@ public class ContactController {
 
         logger.info("File Information : {}", contactForm.getContactImage().getOriginalFilename());
 
-        String filename = UUID.randomUUID().toString();
-
-        // to upload the image
-        String fileURL = imageService.uploadImage(contactForm.getContactImage(), filename);
-
         Contact contact = new Contact();
         contact.setName(contactForm.getName());
         contact.setEmail(contactForm.getEmail());
@@ -91,9 +86,17 @@ public class ContactController {
         contact.setUser(user);
         contact.setLinkedInLink(contactForm.getLinkedInLink());
         contact.setWebsiteLink(contactForm.getWebsiteLink());
-        contact.setPicture(fileURL);
-        contact.setCloudinaryImagePublicId(filename);
+
         contactService.saveContact(contact);
+
+        if(contactForm.getContactImage() != null && !contactForm.getContactImage().isEmpty()){
+
+            String filename = UUID.randomUUID().toString();
+            // to upload the image
+            String fileURL = imageService.uploadImage(contactForm.getContactImage(), filename);
+            contact.setPicture(fileURL);
+            contact.setCloudinaryImagePublicId(filename);
+        }
 
         httpSession.setAttribute("message", Message.builder().content("You have successfully added the contact").type(MessageType.green).build());
 
